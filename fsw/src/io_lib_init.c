@@ -47,7 +47,7 @@ int32 IO_LibInit(void)
 
     if (iStatus != CFE_SUCCESS)
     {
-        CFE_ES_WriteToSysLog("IO_Lib Init failed.\n", iStatus);
+        CFE_ES_WriteToSysLog("IO_Lib Init failed with status %d \n", iStatus);
     }
 
 
