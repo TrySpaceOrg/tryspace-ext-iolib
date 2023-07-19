@@ -163,6 +163,16 @@ int32 TM_SDLP_InitChannel(TM_SDLP_FrameInfo_t *pFrameInfo,
         goto end_of_function;
     }
 
+#ifdef SDLP_DEBUG
+    printf("TM_SDLP Initializing channel:\n");
+    printf("\t Primary header length: \t%d\n", TMTF_PRIHDR_LENGTH);
+    printf("\t Secondary header length: \t%d\n", secHdrLength);
+    printf("\t Data field length: \t%d\n", dataFieldLength);
+    printf("\t Data field offset: \t%d\n", dataFieldOffset);
+    printf("\t OCF Length: \t%d\n", TMTF_OCF_LENGTH); // Todo, currently hardcoded
+    printf("\t FECF length: \t%dn", TMTF_ERR_CTRL_FIELD_LENGTH); //Todo, currently hardcoded
+#endif
+
     /* Update the Transfer Frame Info */
     pFrameInfo->dataFieldLength     = (uint16) dataFieldLength;
     pFrameInfo->dataFieldOffset     = dataFieldOffset;
