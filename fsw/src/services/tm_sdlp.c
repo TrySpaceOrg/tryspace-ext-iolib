@@ -104,6 +104,8 @@ int32 TM_SDLP_InitChannel(TM_SDLP_FrameInfo_t *pFrameInfo,
     uint16 dataFieldOffset;
     uint16 secHdrLength;
     uint16 gvcid = 0;
+    uint8  sdlsSecurityHeaderLength = 0;
+    uint8  sdlsSecurityTrailerLength = 0;
     char mutName[OS_MAX_API_NAME];
     
     if (pGlobalConfig == NULL || pChannelConfig == NULL || pFrameInfo == NULL ||
@@ -141,7 +143,19 @@ int32 TM_SDLP_InitChannel(TM_SDLP_FrameInfo_t *pFrameInfo,
         dataFieldOffset += secHdrLength + 1;
     }
 
+    // IF using SDLS
+    if (1)
+    {
+        dataFieldOffset += sdlsSecurityHeaderLength;
+    }
+
     dataFieldLength -= dataFieldOffset;
+
+    // IF using SDLS
+    if (1)
+    {
+        dataFieldLength -= sdlsSecurityTrailerLength;
+    }
 
     if (pChannelConfig->ocfFlag == TRUE)
     {
