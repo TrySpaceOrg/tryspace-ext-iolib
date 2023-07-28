@@ -60,10 +60,13 @@ uint32 Ut_CFE_SB_GetMsgCount(uint16 MessageID)
     CFE_MSG_Message_t        *MessagePtr;
     uint32               MessageCount = 0;
 
+    CFE_SB_MsgId_t MsgId = CFE_SB_INVALID_MSG_ID;
+    CFE_MSG_GetMsgId(MessagePtr, &MsgId);
+
     CurrentNode = UtList_First(&MsgQueue);
     while (CurrentNode) {
         MessagePtr = CurrentNode->Data;
-        if (MessageID == CFE_MSG_GetMsgId(MessagePtr), CFE_SB_MsgId_t *MsgId) {
+        if (MessageID == CFE_SB_MsgIdToValue(MsgId)) {
             MessageCount++;
         }
         CurrentNode = CurrentNode->Next;
@@ -85,10 +88,13 @@ bool Ut_CFE_SB_PacketSent(uint16 MessageID)
     UtListNode_t        *CurrentNode;
     CFE_MSG_Message_t        *MessagePtr;
 
+    CFE_SB_MsgId_t MsgId = CFE_SB_INVALID_MSG_ID;
+    CFE_MSG_GetMsgId(MessagePtr, &MsgId);
+
     CurrentNode = UtList_First(&MsgQueue);
     while (CurrentNode) {
         MessagePtr = CurrentNode->Data;
-        if (MessageID == CFE_MSG_GetMsgId(MessagePtr), CFE_SB_MsgId_t *MsgId) {
+        if (MessageID == CFE_SB_MsgIdToValue(MsgId)) {
             return(true);
         }
         CurrentNode = CurrentNode->Next;
@@ -102,10 +108,13 @@ void *Ut_CFE_SB_FindPacket(uint16 MessageID, uint32 MessageNumber)
     CFE_MSG_Message_t        *MessagePtr;
     uint32               MessageCount = 0;
 
+    CFE_SB_MsgId_t MsgId = CFE_SB_INVALID_MSG_ID;
+    CFE_MSG_GetMsgId(MessagePtr, &MsgId);
+
     CurrentNode = UtList_First(&MsgQueue);
     while (CurrentNode) {
         MessagePtr = CurrentNode->Data;
-        if (MessageID == CFE_MSG_GetMsgId(MessagePtr), CFE_SB_MsgId_t *MsgId) {
+        if (MessageID == CFE_SB_MsgIdToValue(MsgId)) {
             MessageCount++;
             if (MessageCount == MessageNumber) {
                 return(CurrentNode->Data);
