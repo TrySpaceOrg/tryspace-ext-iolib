@@ -107,6 +107,7 @@ int32 TM_SDLP_InitChannel(TM_SDLP_FrameInfo_t *pFrameInfo,
     uint8  sdlsSecurityHeaderLength = 0;
     uint8  sdlsSecurityTrailerLength = 0;
     char mutName[OS_MAX_API_NAME];
+    SecurityAssociation_t* sa_ptr = NULL;
     
     if (pGlobalConfig == NULL || pChannelConfig == NULL || pFrameInfo == NULL ||
         pOverflowBuffer == NULL || pTfBuffer == NULL)
@@ -143,17 +144,35 @@ int32 TM_SDLP_InitChannel(TM_SDLP_FrameInfo_t *pFrameInfo,
         dataFieldOffset += secHdrLength + 1;
     }
 
+    // Need SA information for security parameter lengths
+    // Query SA DB for active SA / SDLS parameters
+    if (sadb_routine == NULL) // This should not happen, but tested here for safety
+    {
+        printf(KRED "ERROR: SA DB Not initalized! -- CRYPTO_LIB_ERR_NO_INIT, Will Exit\n" RESET);
+        iStatus = CRYPTO_LIB_ERR_NO_INIT;
+    }
+    else
+    {
+        // CODE REVIEW - Use of MAP_IDs seems non-correct. They exist for TC specifically, but somehow overtime
+        // we've morphed and have a TYPE_TC and TYPE_TM enum - realistically MAP_IDs are a set of allowable values
+        // this might take some figurin'
+        iStatus = sadb_routine->sadb_get_operational_sa_from_gvcid(0, pGlobalConfig->scId, pChannelConfig->vcId, 0, &sa_ptr);
+    }
+
     // IF using SDLS
     if (1)
     {
+        sdlsSecurityHeaderLength = Crypto_Get_Security_Header_Length(sa_ptr);
         dataFieldOffset += sdlsSecurityHeaderLength;
     }
 
+    // Reduce available field length based on cumulative offset
     dataFieldLength -= dataFieldOffset;
 
     // IF using SDLS
     if (1)
     {
+        sdlsSecurityTrailerLength = Crypto_Get_Security_Trailer_Length(sa_ptr);
         dataFieldLength -= sdlsSecurityTrailerLength;
     }
 
@@ -167,6 +186,18 @@ int32 TM_SDLP_InitChannel(TM_SDLP_FrameInfo_t *pFrameInfo,
         dataFieldLength -= TMTF_ERR_CTRL_FIELD_LENGTH;
     }
 
+#ifdef SDLP_DEBUG
+    printf("TM_SDLP Initializing channel:\n");
+    printf("\t Primary header length: \t%d\n", TMTF_PRIHDR_LENGTH);
+    printf("\t Secondary header length: \t%d\n", secHdrLength);
+    printf("\t Security header length: \t%d\n", sdlsSecurityHeaderLength);
+    printf("\t Data field offset: \t%d\n", dataFieldOffset);
+    printf("\t Data field length: \t%d\n", dataFieldLength);
+    printf("\t Security trailer length: \t%d\n", sdlsSecurityTrailerLength);
+    printf("\t OCF Length: \t%d HARCODED - to be changed\n", TMTF_OCF_LENGTH); // Todo, currently hardcoded
+    printf("\t FECF length: \t%d HARDCODED - to be changed\n", TMTF_ERR_CTRL_FIELD_LENGTH); //Todo, currently hardcoded
+#endif
+
     if (dataFieldLength < 0)
     {
         CFE_EVS_SendEvent(IO_LIB_TM_SDLP_EID, CFE_EVS_ERROR,
@@ -176,16 +207,6 @@ int32 TM_SDLP_InitChannel(TM_SDLP_FrameInfo_t *pFrameInfo,
         iStatus = TM_SDLP_INVALID_LENGTH;
         goto end_of_function;
     }
-
-#ifdef SDLP_DEBUG
-    printf("TM_SDLP Initializing channel:\n");
-    printf("\t Primary header length: \t%d\n", TMTF_PRIHDR_LENGTH);
-    printf("\t Secondary header length: \t%d\n", secHdrLength);
-    printf("\t Data field length: \t%d\n", dataFieldLength);
-    printf("\t Data field offset: \t%d\n", dataFieldOffset);
-    printf("\t OCF Length: \t%d\n", TMTF_OCF_LENGTH); // Todo, currently hardcoded
-    printf("\t FECF length: \t%dn", TMTF_ERR_CTRL_FIELD_LENGTH); //Todo, currently hardcoded
-#endif
 
     /* Update the Transfer Frame Info */
     pFrameInfo->dataFieldLength     = (uint16) dataFieldLength;

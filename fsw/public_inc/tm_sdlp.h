@@ -37,6 +37,7 @@ extern "C" {
 *******************************************************************************/
 #include "io_lib.h"
 #include "tmtf.h"
+#include "crypto.h"
 
 
 /*******************************************************************************
@@ -63,7 +64,7 @@ typedef struct
 } TM_SDLP_GlobalConfig_t;
     
 
-/** Following Structure is the user defined managed /configuration parameters  
+/** Following Structure is the user defined managed / configuration parameters  
     for a a specific Channel (Master or virtual) */
 typedef struct
 {
