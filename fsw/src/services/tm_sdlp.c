@@ -163,7 +163,7 @@ int32 TM_SDLP_InitChannel(TM_SDLP_FrameInfo_t *pFrameInfo,
         if (iStatus != CRYPTO_LIB_SUCCESS) 
         {   
             printf(KRED "Error retrieving operational SA. Error code %d\n" RESET, iStatus);
-            return iStatus;
+            goto end_of_function;
         }
     }
 
