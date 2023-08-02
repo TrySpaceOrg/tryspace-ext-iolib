@@ -108,7 +108,7 @@ int32 TM_SDLP_InitChannel(TM_SDLP_FrameInfo_t *pFrameInfo,
     uint8  sdlsSecurityTrailerLength = 0;
     char mutName[OS_MAX_API_NAME];
     SecurityAssociation_t* sa_ptr = NULL;
-    
+
     if (pGlobalConfig == NULL || pChannelConfig == NULL || pFrameInfo == NULL ||
         pOverflowBuffer == NULL || pTfBuffer == NULL)
     {
@@ -119,7 +119,7 @@ int32 TM_SDLP_InitChannel(TM_SDLP_FrameInfo_t *pFrameInfo,
         iStatus = TM_SDLP_INVALID_POINTER;
         goto end_of_function;
     }
-    
+
     secHdrLength = pChannelConfig->secHdrLength;
 
     /* The secHdr Length must be between 1-63 bytes if present. 
@@ -128,6 +128,7 @@ int32 TM_SDLP_InitChannel(TM_SDLP_FrameInfo_t *pFrameInfo,
          (secHdrLength > TMTF_SECHDR_MAX_LENGTH || secHdrLength < 1)) ||
         (pChannelConfig->fshFlag == FALSE && secHdrLength != 0))        
     {
+    
         CFE_EVS_SendEvent(IO_LIB_TM_SDLP_EID, CFE_EVS_ERROR,
                           "TM_SDLP_InitChannel Error: "
                           "Invalid SecHdrLength:%d", secHdrLength);
@@ -135,7 +136,7 @@ int32 TM_SDLP_InitChannel(TM_SDLP_FrameInfo_t *pFrameInfo,
         iStatus = TM_SDLP_INVALID_LENGTH;
         goto end_of_function;
     }
-    
+
     dataFieldLength = (int32) pGlobalConfig->frameLength;
     dataFieldOffset = TMTF_PRIHDR_LENGTH;
 
@@ -156,12 +157,20 @@ int32 TM_SDLP_InitChannel(TM_SDLP_FrameInfo_t *pFrameInfo,
         // CODE REVIEW - Use of MAP_IDs seems non-correct. They exist for TC specifically, but somehow overtime
         // we've morphed and have a TYPE_TC and TYPE_TM enum - realistically MAP_IDs are a set of allowable values
         // this might take some figurin'
-        iStatus = sadb_routine->sadb_get_operational_sa_from_gvcid(0, pGlobalConfig->scId, pChannelConfig->vcId, 0, &sa_ptr);
+    
+        iStatus = sadb_routine->sadb_get_operational_sa_from_gvcid(0, (uint16)pGlobalConfig->scId, (uint16)pChannelConfig->vcId, 0, &sa_ptr);
+    
+        if (iStatus != CRYPTO_LIB_SUCCESS) 
+        {   
+            printf(KRED "Error retrieving operational SA. Error code %d\n" RESET, iStatus);
+            return iStatus;
+        }
     }
 
     // IF using SDLS
     if (1)
     {
+    
         sdlsSecurityHeaderLength = Crypto_Get_Security_Header_Length(sa_ptr);
         dataFieldOffset += sdlsSecurityHeaderLength;
     }
@@ -172,6 +181,7 @@ int32 TM_SDLP_InitChannel(TM_SDLP_FrameInfo_t *pFrameInfo,
     // IF using SDLS
     if (1)
     {
+    
         sdlsSecurityTrailerLength = Crypto_Get_Security_Trailer_Length(sa_ptr);
         dataFieldLength -= sdlsSecurityTrailerLength;
     }
@@ -186,7 +196,7 @@ int32 TM_SDLP_InitChannel(TM_SDLP_FrameInfo_t *pFrameInfo,
         dataFieldLength -= TMTF_ERR_CTRL_FIELD_LENGTH;
     }
 
-#ifdef SDLP_DEBUG
+#ifdef TM_DEBUG
     printf("TM_SDLP Initializing channel:\n");
     printf("\t Primary header length: \t%d\n", TMTF_PRIHDR_LENGTH);
     printf("\t Secondary header length: \t%d\n", secHdrLength);
@@ -490,7 +500,7 @@ int32 TM_SDLP_StartFrame(TM_SDLP_FrameInfo_t *pFrameInfo)
         iStatus = TM_SDLP_FRAME_NOT_INIT;
         goto end_of_function;
     }
-
+    
     OS_MutSemTake(pFrameInfo->mutexId);
     
     /* If the frame is already started, issue a warning. */
@@ -503,7 +513,7 @@ int32 TM_SDLP_StartFrame(TM_SDLP_FrameInfo_t *pFrameInfo)
     
     /* Set Frame as ready */
     pFrameInfo->isReady = TRUE;
-    
+
     pOverflow = &pFrameInfo->overflowInfo;
     lengthToCopy = pOverflow->buffSize - pOverflow->freeOctets;
 
