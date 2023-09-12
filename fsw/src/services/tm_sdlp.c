@@ -147,7 +147,7 @@ int32 TM_SDLP_InitChannel(TM_SDLP_FrameInfo_t *pFrameInfo,
 
     // Need SA information for security parameter lengths
     // Query SA DB for active SA / SDLS parameters
-    if (sadb_routine == NULL) // This should not happen, but tested here for safety
+    if (sa_if == NULL) // This should not happen, but tested here for safety
     {
         printf(KRED "ERROR: SA DB Not initalized! -- CRYPTO_LIB_ERR_NO_INIT, Will Exit\n" RESET);
         iStatus = CRYPTO_LIB_ERR_NO_INIT;
@@ -157,7 +157,7 @@ int32 TM_SDLP_InitChannel(TM_SDLP_FrameInfo_t *pFrameInfo,
         // CODE REVIEW - Use of MAP_IDs seems non-correct. They exist for TC specifically, but somehow overtime
         // we've morphed and have a TYPE_TC and TYPE_TM enum - realistically MAP_IDs are a set of allowable values
         // this might take some figurin'
-        iStatus = sadb_routine->sadb_get_operational_sa_from_gvcid(0, (uint16)pGlobalConfig->scId, (uint16)pChannelConfig->vcId, 0, &sa_ptr);
+        iStatus = sa_if->sa_get_operational_sa_from_gvcid(0, (uint16)pGlobalConfig->scId, (uint16)pChannelConfig->vcId, 0, &sa_ptr);
  
         if (iStatus != CRYPTO_LIB_SUCCESS) 
         {   
