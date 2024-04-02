@@ -160,7 +160,7 @@ int32 TM_SDLP_InitChannel(TM_SDLP_FrameInfo_t *pFrameInfo,
  
         if (iStatus != CRYPTO_LIB_SUCCESS) 
         {   
-            printf(KRED "Error retrieving operational SA. Error code %d\n" RESET, iStatus);
+            printf(KRED "Error retrieving operational SA. Error code %d. scId = %d, vcId = %d \n" RESET, iStatus, pGlobalConfig->scId, pChannelConfig->vcId);
             goto end_of_function;
         }
     }
@@ -205,7 +205,7 @@ int32 TM_SDLP_InitChannel(TM_SDLP_FrameInfo_t *pFrameInfo,
     printf("\t Data field offset: \t%d\n", dataFieldOffset);
     printf("\t Data field length: \t%d\n", dataFieldLength);
     printf("\t Security trailer length: \t%d\n", sdlsSecurityTrailerLength);
-    printf("\t OCF Length: \t%d HARCODED - to be changed\n", TMTF_OCF_LENGTH); // Todo, currently hardcoded
+    printf("\t OCF Length: \t%d HARDCODED - to be changed\n", TMTF_OCF_LENGTH); // Todo, currently hardcoded
     printf("\t FECF length: \t%d HARDCODED - to be changed\n", TMTF_ERR_CTRL_FIELD_LENGTH); //Todo, currently hardcoded
 #endif
 
