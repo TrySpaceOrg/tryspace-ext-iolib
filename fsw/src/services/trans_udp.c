@@ -29,6 +29,13 @@
 
 #include "trans_udp.h"
 
+/* Start additional includes for hostname snippet */
+#include<sys/socket.h>
+#include<netdb.h>	//hostent
+#include<arpa/inet.h>
+/* End additional includes for hostname snippet */
+
+
 /** Initialize (create, configure and bind) a UDP Socket */
 int32 IO_TransUdpInit(IO_TransUdpConfig_t * config, IO_TransUdp_t * udp)
 {
@@ -110,6 +117,11 @@ int32 IO_TransUdpConfigSocket(IO_TransUdpConfig_t *config, IO_TransUdp_t *udp)
                           "IO_TransUDP Error: Bad config timeout input.");
         return IO_TRANS_UDP_BAD_INPUT_ERROR;
     }
+
+    /* Initialize socket address structures */
+    CFE_PSP_MemSet((void *) &udp->sockAddr, 0x0, sizeof(struct sockaddr_in));
+    CFE_PSP_MemSet((void *) &udp->srcAddr, 0x0, sizeof(struct sockaddr_in));
+    CFE_PSP_MemSet((void *) &udp->destAddr, 0x0, sizeof(struct sockaddr_in));
     
     /* Get IP address from cAddr */
     /* NOTE: inet_aton errors out if cAddr = "0.0.0.0", the value of
@@ -122,8 +134,27 @@ int32 IO_TransUdpConfigSocket(IO_TransUdpConfig_t *config, IO_TransUdp_t *udp)
     }
     else
     {
-        //status = inet_aton(&config->cAddr[0], (struct in_addr *) &uiAddr);
-        status = inet_pton(AF_INET, &config->cAddr[0], (struct in_addr *) &uiAddr);
+        /* 
+            Start hostname snippet from: https://stackoverflow.com/questions/38002016/problems-with-gethostbyname-c
+        */
+        struct hostent *he;
+        struct in_addr **addr_list;
+        int i;
+
+        if ( (he = gethostbyname(config->cAddr) ) != NULL) 
+        {
+            addr_list = (struct in_addr **) he->h_addr_list;
+            for(i = 0; addr_list[i] != NULL; i++) 
+            {
+                //Return the first one;
+                strcpy(config->cAddr, inet_ntoa(*addr_list[i]));
+                break;
+            }
+        }
+        /* 
+            End hostname snippet from: https://stackoverflow.com/questions/38002016/problems-with-gethostbyname-c
+        */
+        status = inet_aton(&config->cAddr[0], (struct in_addr *) &uiAddr);
         if (status == INET_ATON_ERROR)
         {
             CFE_EVS_SendEvent(IO_LIB_TRANS_UDP_EID, CFE_EVS_EventType_ERROR,
@@ -132,11 +163,6 @@ int32 IO_TransUdpConfigSocket(IO_TransUdpConfig_t *config, IO_TransUdp_t *udp)
             return IO_TRANS_UDP_BAD_INPUT_ERROR;
         }
     }
-
-    /* Initialize socket address structures */
-    CFE_PSP_MemSet((void *) &udp->sockAddr, 0x0, sizeof(struct sockaddr_in));
-    CFE_PSP_MemSet((void *) &udp->srcAddr, 0x0, sizeof(struct sockaddr_in));
-    CFE_PSP_MemSet((void *) &udp->destAddr, 0x0, sizeof(struct sockaddr_in));
 
     /* Save UDP Socket Addr structure */
     udp->sockAddr.sin_family        = AF_INET;
@@ -245,8 +271,28 @@ int32 IO_TransUdpSetDestAddr(IO_TransUdp_t *udp, char * destAddr,
     }
     
     /* Get IP address from cAddr */
-    //status = inet_aton(destAddr, (struct in_addr *) &uiAddr);
-    status = inet_pton(AF_INET, destAddr, (struct in_addr *) &uiAddr);
+    /* 
+        Start hostname snippet from: https://stackoverflow.com/questions/38002016/problems-with-gethostbyname-c
+    */
+    struct hostent *he;
+    struct in_addr **addr_list;
+    int i;
+
+    if ( (he = gethostbyname(destAddr) ) != NULL) 
+    {
+        addr_list = (struct in_addr **) he->h_addr_list;
+        for(i = 0; addr_list[i] != NULL; i++) 
+        {
+            // Return the first one;
+            strcpy(destAddr , inet_ntoa(*addr_list[i]));
+            break;
+        }
+    }
+    /* 
+        End hostname snippet from: https://stackoverflow.com/questions/38002016/problems-with-gethostbyname-c
+    */
+
+    status = inet_aton(destAddr, (struct in_addr *) &uiAddr);
     if (status == INET_ATON_ERROR)
     {
         CFE_EVS_SendEvent(IO_LIB_TRANS_UDP_EID, CFE_EVS_EventType_ERROR,
