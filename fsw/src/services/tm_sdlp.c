@@ -104,8 +104,11 @@ int32 TM_SDLP_InitChannel(TM_SDLP_FrameInfo_t *pFrameInfo,
     uint16 dataFieldOffset;
     uint16 secHdrLength;
     uint16 gvcid = 0;
+    uint8  sdlsSecurityHeaderLength = 0;
+    uint8  sdlsSecurityTrailerLength = 0;
     char mutName[OS_MAX_API_NAME];
-    
+    SecurityAssociation_t* sa_ptr = NULL;
+
     if (pGlobalConfig == NULL || pChannelConfig == NULL || pFrameInfo == NULL ||
         pOverflowBuffer == NULL || pTfBuffer == NULL)
     {
@@ -116,7 +119,7 @@ int32 TM_SDLP_InitChannel(TM_SDLP_FrameInfo_t *pFrameInfo,
         iStatus = TM_SDLP_INVALID_POINTER;
         goto end_of_function;
     }
-    
+
     secHdrLength = pChannelConfig->secHdrLength;
 
     /* The secHdr Length must be between 1-63 bytes if present. 
@@ -132,7 +135,7 @@ int32 TM_SDLP_InitChannel(TM_SDLP_FrameInfo_t *pFrameInfo,
         iStatus = TM_SDLP_INVALID_LENGTH;
         goto end_of_function;
     }
-    
+
     dataFieldLength = (int32) pGlobalConfig->frameLength;
     dataFieldOffset = TMTF_PRIHDR_LENGTH;
 
@@ -141,7 +144,44 @@ int32 TM_SDLP_InitChannel(TM_SDLP_FrameInfo_t *pFrameInfo,
         dataFieldOffset += secHdrLength + 1;
     }
 
+    // Need SA information for security parameter lengths
+    // Query SA DB for active SA / SDLS parameters
+    if (sa_if == NULL) // This should not happen, but tested here for safety
+    {
+        printf(KRED "ERROR: SA DB Not initalized! -- CRYPTO_LIB_ERR_NO_INIT, Will Exit\n" RESET);
+        iStatus = CRYPTO_LIB_ERR_NO_INIT;
+    }
+    else
+    {
+        // CODE REVIEW - Use of MAP_IDs seems non-correct. They exist for TC specifically, but somehow overtime
+        // we've morphed and have a TYPE_TC and TYPE_TM enum - realistically MAP_IDs are a set of allowable values
+        // this might take some figurin'
+        iStatus = sa_if->sa_get_operational_sa_from_gvcid(0, (uint16)pGlobalConfig->scId, (uint16)pChannelConfig->vcId, 0, &sa_ptr);
+ 
+        if (iStatus != CRYPTO_LIB_SUCCESS) 
+        {   
+            printf(KRED "Error retrieving operational SA. Error code %d. scId = %d, vcId = %d \n" RESET, iStatus, pGlobalConfig->scId, pChannelConfig->vcId);
+            goto end_of_function;
+        }
+    }
+
+    // IF using SDLS
+    // TODO Review this if_statement
+    if (1)
+    {
+        sdlsSecurityHeaderLength = Crypto_Get_Security_Header_Length(sa_ptr);
+        dataFieldOffset += sdlsSecurityHeaderLength;
+    }
+
+    // Reduce available field length based on cumulative offset
     dataFieldLength -= dataFieldOffset;
+
+    // IF using SDLS
+    if (1)
+    {
+        sdlsSecurityTrailerLength = Crypto_Get_Security_Trailer_Length(sa_ptr);
+        dataFieldLength -= sdlsSecurityTrailerLength;
+    }
 
     if (pChannelConfig->ocfFlag == true)
     {
@@ -152,6 +192,22 @@ int32 TM_SDLP_InitChannel(TM_SDLP_FrameInfo_t *pFrameInfo,
     {
         dataFieldLength -= TMTF_ERR_CTRL_FIELD_LENGTH;
     }
+
+#ifdef TM_DEBUG
+    printf("TM_SDLP Initializing channel:\n");
+    printf("\t Primary header length: \t%d\n", TMTF_PRIHDR_LENGTH);
+    printf("\t Secondary header length: \t%d\n", secHdrLength);
+    printf("\t\t SPI Length: 2 bytes\n");
+    printf("\t\t IV Length: %d bytes\n", sa_ptr->shivf_len);
+    printf("\t\t SNF Length Length: %d bytes\n", sa_ptr->shsnf_len);
+    printf("\t\t PLF Length: %d bytes\nEnable", sa_ptr->shplf_len);
+    printf("\t Security header length: \t%d\n", sdlsSecurityHeaderLength);
+    printf("\t Data field offset: \t%d\n", dataFieldOffset);
+    printf("\t Data field length: \t%d\n", dataFieldLength);
+    printf("\t Security trailer length: \t%d\n", sdlsSecurityTrailerLength);
+    printf("\t OCF Length: \t%d HARDCODED - to be changed\n", TMTF_OCF_LENGTH); // Todo, currently hardcoded
+    printf("\t FECF length: \t%d HARDCODED - to be changed\n", TMTF_ERR_CTRL_FIELD_LENGTH); //Todo, currently hardcoded
+#endif
 
     if (dataFieldLength < 0)
     {
@@ -255,6 +311,12 @@ int32 TM_SDLP_FrameHasData(TM_SDLP_FrameInfo_t *pFrameInfo)
         hasData = TM_SDLP_INVALID_POINTER;
         goto end_of_function;
     }
+
+#ifdef TM_DEBUG
+    printf("*** DATA LENGTH INFO!***\n");
+    printf("*** Free Octets: %d\n", pFrameInfo->freeOctets);
+    printf("*** dataFieldLength: %d\n", pFrameInfo->dataFieldLength);
+#endif
     
     if (pFrameInfo->freeOctets < pFrameInfo->dataFieldLength)
     {
@@ -447,7 +509,7 @@ int32 TM_SDLP_StartFrame(TM_SDLP_FrameInfo_t *pFrameInfo)
         iStatus = TM_SDLP_FRAME_NOT_INIT;
         goto end_of_function;
     }
-
+    
     OS_MutSemTake(pFrameInfo->mutexId);
     
     /* If the frame is already started, issue a warning. */
