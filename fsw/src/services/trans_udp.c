@@ -65,6 +65,31 @@ int32 IO_TransUdpInit(IO_TransUdpConfig_t * config, IO_TransUdp_t * udp)
 
 
 /** Create a IPv4 Datagram UDP Socket */
+int32 IO_TransUdpCreateSocket(IO_TransUdp_t *udp)
+{
+    if (udp == NULL)
+    {
+        CFE_EVS_SendEvent(IO_LIB_TRANS_UDP_EID,CFE_EVS_EventType_ERROR,
+                          "IO_TransUDP Error: Null input argument. ");
+        return IO_TRANS_UDP_BAD_INPUT_ERROR;
+    }
+
+    /* Create socket */
+    /* AF_INET: IPv4 */
+    /* SOCK_DGRAM: Datagram socket */
+    /* IPPROTO_UDP:  UDP socket */
+    udp->sockId = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+
+    if (udp->sockId < 0)
+    {
+        CFE_EVS_SendEvent(IO_LIB_TRANS_UDP_EID,CFE_EVS_EventType_ERROR,
+                          "IO_TransUDP Error: create socket failed. " 
+                          "errno:%d", errno);
+    }
+
+    return udp->sockId;
+}
+/** Set the UDP Socket sockAddr structure */
 int32 IO_TransUdpConfigSocket(IO_TransUdpConfig_t *config, IO_TransUdp_t *udp)
 {
     int32 status = IO_TRANS_UDP_NO_ERROR;
