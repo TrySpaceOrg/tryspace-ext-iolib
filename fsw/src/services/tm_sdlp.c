@@ -64,7 +64,7 @@ int32 TM_SDLP_InitIdlePacket(CFE_MSG_Message_t *pIdlePacket, uint8 *pIdlePattern
     }
 
     /* Idle packet, as specified in CCSDS 133.0-B-1 */
-    CFE_MSG_Init(pIdlePacket, CFE_SB_ValueToMsgId(0x3ffU), bufferLength);
+    CFE_MSG_Init(pIdlePacket, CFE_SB_ValueToMsgId(0x7ffU), bufferLength);
     idleDataLength = CFE_SB_GetUserDataLength(pIdlePacket);
     pIdleData = CFE_SB_GetUserData(pIdlePacket);
 
@@ -414,20 +414,22 @@ int32 TM_SDLP_AddIdlePacket(TM_SDLP_FrameInfo_t *pFrameInfo,
         lengthToCopy = 7;
     }
 
-    /* The Message ID of the idle buffer should always be 0x3ff (Idle Packet). */
+    /* Get the Message ID from the Idle Packet*/
     CFE_MSG_GetMsgId(pIdlePacket, &MsgId);
-    if (CFE_SB_MsgIdToValue(MsgId) != 0x3ffU)
+
+    /* The Message ID of the idle buffer should always be 0x7ff (Idle Packet). */
+    if (CFE_SB_MsgIdToValue(MsgId) != 0x7ffU)
     {
         CFE_EVS_SendEvent(IO_LIB_TM_SDLP_EID, CFE_EVS_EventType_ERROR,
                           "TM_SDLP_AddIdlePacket Error: "
-                          "The IdlePacket has MsgId other than 0x3ff.");
+                          "The IdlePacket has MsgId other than 0x7ff.");
         
         OS_MutSemGive(pFrameInfo->mutexId);
         iStatus = TM_SDLP_ERROR;
         goto end_of_function;
     }
 
-    /* Set the idlePacket length in header to lenghtToCopy */
+    /* Set the idlePacket length in header to lengthToCopy */
     CFE_MSG_SetSize(pIdlePacket,  lengthToCopy);
     
     /* Add the idle packet. May spill over to overflow buffer. */
@@ -757,7 +759,7 @@ static int32 TM_SDLP_AddData(TM_SDLP_FrameInfo_t *pFrameInfo, uint8 *pData,
         }
     }
 
-    CFE_PSP_MemCpy((void *) (pFrameInfo->frame + pFrameInfo->currentDataOffset), 
+    CFE_PSP_MemCpy((void *) ((char*)pFrameInfo->frame + pFrameInfo->currentDataOffset), 
                    pData, lengthToCopy);
     pFrameInfo->freeOctets -= lengthToCopy;
 
