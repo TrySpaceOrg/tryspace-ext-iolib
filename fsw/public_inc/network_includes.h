@@ -43,7 +43,7 @@
     #include <netinet/in.h>
     #include <netinet/tcp.h>
 
-#elif  _RTEMS_OS_
+#elif defined(_RTEMS_OS_)
     #define _USING_RTEMS_INCLUDES_
     #include <unistd.h>
     #include <sys/types.h>
@@ -56,7 +56,7 @@
     #ifndef MSG_DONTWAIT
       #define MSG_DONTWAIT 0
     #endif
-#elif  _MAC_OS_
+#elif defined(_MAC_OS_)
     #include <unistd.h>
     #include <sys/types.h>
     #include <sys/socket.h>
@@ -66,7 +66,7 @@
     #include <fcntl.h>
     #define _HAVE_FCNTL_
 
-#elif  _LINUX_OS_
+#elif defined(_LINUX_OS_)
     #include <unistd.h>
     #include <sys/types.h>
     #include <sys/socket.h>
