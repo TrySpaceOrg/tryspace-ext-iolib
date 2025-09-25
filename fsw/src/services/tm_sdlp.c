@@ -285,7 +285,7 @@ int32 TM_SDLP_InitChannel(TM_SDLP_FrameInfo_t *pFrameInfo,
 
     /* Create the Mutex */
     gvcid = TMTF_GetGlobalVcId(pFrameInfo->frame);
-    sprintf(mutName, "TF Global VC ID %d", gvcid);
+    sprintf(mutName, "TF Global VCID%d", gvcid);
     OS_MutSemCreate(&pFrameInfo->mutexId, mutName, 0); 
 
     pFrameInfo->isInitialized = true;
